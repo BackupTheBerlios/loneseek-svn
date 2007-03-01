@@ -1,0 +1,27 @@
+BODY {
+	FONT-FAMILY: sans-serif; BACKGROUND-COLOR: #ffffff
+}
+A {
+	COLOR: #ff0000
+}
+A:visited {
+	COLOR: #ff0000
+}
+A:hover {
+	BACKGROUND-COLOR: #ffff00
+}
+H1 {
+	FONT-WEIGHT: bold; FONT-SIZE: 150%
+}
+H2 {
+	FONT-WEIGHT: bold; FONT-SIZE: 130%
+}
+H3 {
+	FONT-WEIGHT: bold; FONT-SIZE: 110%
+}
+SMALL {
+	FONT-SIZE: 75%
+}
+TD.standout {
+	BACKGROUND-COLOR: #ccffcc
+}

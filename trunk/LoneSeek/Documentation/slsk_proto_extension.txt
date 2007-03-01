@@ -1,0 +1,94 @@
+
+ This document contains extension to the original slsk_proto protocol
+ specification. And marks if the documentation is still valid. If
+ there is no remark about a packet it is proven that the original
+ documentation is still valid.
+ 
+ Protocol Version: 156
+ 
+ Legend            Description
+ -------------------------------------------------------------------- 
+ Byte              bit octet.
+ String            A Byte string used in the SoulSeek protocol. It 
+                   is currently unclear which encoding is supported.
+                   But UTF8 is assumed.
+ Int               A four byte signed integer.
+ AD                Application/User defined value.
+ SD                Server defined value.
+ 
+/*
+ * Copyright (C) by Florian Stinglmayr
+ * Email: fstinglmayr@gmail.com
+ * Home: http://mindcompletion.blogspot.com
+ */
+ 
+ --------------------------------------------------------------------
+ All messages
+ --------------------------------------------------------------------
+ 
+ There seems to be some kind of hash going on. It is a MD5 hash 
+ over some data, but over which data field this has not yet been 
+ confirmed. Here is a list of packages found to have a hash:
+ 
+    | Type     Direction    Hash is over?
+    +------------------------------------------------------
+    | Login    Both         username + password
+    | 
+ 
+
+ --------------------------------------------------------------------
+ PacketType = Login, Value = 1, Direction = ClientToServer
+ --------------------------------------------------------------------
+ 
+    Datatype    Description             New?    Value
+   ------------------------------------------------------
+    Int        Type                     NO      1
+    String     Username                 NO      AD
+    String     Password                 NO      AD
+    Int        Version                  NO      AD
+    String     MD5 hash                 YES     See below
+    Int        ?                        YES     ?
+ 
+ Implemented and almost right. The packet has now a hash attached to
+ it. The hash is the MD5 hash of the username and password string 
+ plugged together. For example if you have the username "billybob"
+ and the password "secret" it has the following hash value: 
+ MD5("billybobsecret") = 9209133c189c382e35a53f1a4b9e489e
+ 
+ The new value MAY be the initial status after the login.
+ 
+ --------------------------------------------------------------------
+  PacketType = Login, Value = 1, Direction = ServerToClient
+ --------------------------------------------------------------------
+ 
+    Datatype    Description              New?   Value
+   ------------------------------------------------------
+    Int         Type                     NO     1
+    String      Welcome msg              NO     AD
+    Int         IP                       YES*   SD
+    String      Hash                     YES    ?
+ 
+  *The IP field is no longer optional. But it does not contain the
+  clients public IP though. Maybe some kind of random address?
+  
+  It's yet unclear from what value the hash is being calculated from.
+  
+  And again the meaning of the last integer is unkown. Maybe the 
+  status?
+ 
+ --------------------------------------------------------------------
+  PacketType = GetParentList, Value = 71, Direction = ClientToServer
+ --------------------------------------------------------------------
+ 
+    Datatype    Description              New?   Value
+   ------------------------------------------------------
+    Byte		?						 YES	?
+    
+ It is pretty unclear what this message is for. But we have seen the
+ original client sending it. That's why we do the same.
+
+
+ --------------------------------------------------------------------
+                                 EOF
+ --------------------------------------------------------------------
+ 

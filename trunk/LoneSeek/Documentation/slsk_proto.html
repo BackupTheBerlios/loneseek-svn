@@ -1,0 +1,1445 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0122)http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&content-type=text%2Fplain -->
+<HTML><HEAD><TITLE>SoulSeek Protocol Documentation</TITLE>
+<META http-equiv=Content-Type content="text/html; charset=iso-8859-1"><LINK 
+href="slsk_proto_files/styles.css" type=text/css rel=stylesheet>
+<META content="MSHTML 6.00.6000.16414" name=GENERATOR></HEAD>
+<BODY>
+<H1>SoulSeek Protocol Documentation</H1>
+<DIV align=center>
+<H3>Table of Contents</H3>
+<TABLE cellSpacing=0 cellPadding=0 border=0>
+  <TBODY>
+  <TR>
+    <TD><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#versionHistory">Version 
+      History</A><BR><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#introduction">Introduction</A><BR><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#overview">Overview</A><BR><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#constants">Constants</A><BR><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#messages">Messages</A><BR><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#serverMessages">Server 
+      Messages</A><BR><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#peerMessages">Peer 
+      Messages</A><BR><A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#messageSequences">Message 
+      Sequences</A><BR></TD></TR></TBODY></TABLE></DIV><BR><A name=versionHistory></A>
+<H2>Version History</H2>2003-10-05: Added integer to the Login message 
+containing the IP of the client. <A 
+href="http://sourceforge.net/users/arendjr/">Arend van Beelen 
+jr.</A><BR>2003-10-04: Correct statement about Soulseek message byte-ordering. 
+They are little-endian. <A 
+href="http://sourceforge.net/users/franklinmint/">Robert 
+Sayre</A><BR>2003-03-16: Added PierceFW message summary, added to 
+PlaceInQueueRequest message summary, <A 
+href="http://sourceforge.net/users/franklinmint/">Robert 
+Sayre</A><BR>2003-01-26: Added peer messages and login sequence, had revelation 
+about reusing existing peer socket from search result for file request, <A 
+href="http://sourceforge.net/users/brienigma/">BriEnigma</A><BR>2003-01-20: 
+Initial revision, <A 
+href="http://sourceforge.net/users/brienigma/">BriEnigma</A><BR>CVS version ID: 
+$Id: protocol.html,v 1.11 2003/10/12 19:23:18 franklinmint Exp $<BR>Mental Note: 
+When updating this document, remember to upload the latest version to the <A 
+href="http://sourceforge.net/docman/?group_id=69129">SourceForge project 
+documentation web page</A>. <A name=introduction></A>
+<H2>Introduction</H2>
+<P>The SoulSeek protocol is not officially documented anywhere. This document is 
+the result of effort by members of the <A 
+href="http://sourceforge.net/projects/soleseek/">SoleSeek</A> project team. It 
+was pieced together by examining the <A 
+href="http://www.sensi.org/~ak/pyslsk/">Python SoulSeek</A> source code, as well 
+as sniffing network packets. (Hey, Nir! Please don't sue us inder the <A 
+href="http://www.eff.org/IP/DMCA/">DMCA</A> for reverse engineering the 
+protocol!) This document should not be considered the official specification. It 
+is our best guess at how the protocol works. </P><A name=overview></A>
+<H2>Overview</H2>
+<P>The SoulSeek protocol consists of a finite number of messages. Some of these 
+messages are used for communicating between the client and server. Others are 
+used for communications between a client and a peer (another client). All of 
+these messages (with the exception of a couple of peer messages TODO:...are 
+PeerInit and PierceFW the only exceptions?...) follow a standard format. </P>
+<P>There are a few datatypes that the message blocks use:<BR>(TODO: endian-ness? 
+I always get mixed up.)<BR><BR>
+<TABLE cellSpacing=2 cellPadding=1 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout vAlign=top>Integer</TD>
+    <TD class=standout vAlign=top>4 bytes, little endian</TD></TR>
+  <TR>
+    <TD class=standout vAlign=top>Byte</TD>
+    <TD class=standout vAlign=top>1 byte</TD></TR>
+  <TR>
+    <TD class=standout vAlign=top>String</TD>
+    <TD class=standout vAlign=top>an integer (4 bytes) that specifies the 
+      length of the string, followed by the string data as 8-bit characters. The 
+      string is not null-terminated.</TD></TR>
+  <TR>
+    <TD class=standout vAlign=top>TODO:</TD>
+    <TD class=standout vAlign=top>are other datatypes 
+used?</TD></TR></TBODY></TABLE></P>
+<P>The standard message blocks start with an integer. This integer defines the 
+size of the message payload--everything contained in the message, but not 
+including the 4-bytes length. The payload starts with an integer that we shall 
+call the <B>message code</B> that describes what type of message this is. The 
+datatype and meaning of the remaining payload data is dependant on the message 
+code. For example, the following is a very simple message, the Login message 
+from the client to the server:<BR>
+<DIV align=center>
+<TABLE cellSpacing=0 cellPadding=1 border=1>
+  <TBODY>
+  <TR>
+    <TD style="BACKGROUND-COLOR: #ffcccc">Message Length</TD>
+    <TD style="BACKGROUND-COLOR: #ccffcc" colSpan=18>Message Payload</TD></TR>
+  <TR>
+    <TD style="COLOR: #ff0000" noWrap>4-byte-integer: 30</TD>
+    <TD style="COLOR: #009900" noWrap>4-byte-integer: 1</TD>
+    <TD style="COLOR: #009900" noWrap>4-byte-integer: 8</TD>
+    <TD style="COLOR: #009900" noWrap>J</TD>
+    <TD style="COLOR: #009900" noWrap>o</TD>
+    <TD style="COLOR: #009900" noWrap>h</TD>
+    <TD style="COLOR: #009900" noWrap>n</TD>
+    <TD style="COLOR: #009900" noWrap>G</TD>
+    <TD style="COLOR: #009900" noWrap>a</TD>
+    <TD style="COLOR: #009900" noWrap>l</TD>
+    <TD style="COLOR: #009900" noWrap>t</TD>
+    <TD style="COLOR: #009900" noWrap>4-byte-integer: 6</TD>
+    <TD style="COLOR: #009900" noWrap>s</TD>
+    <TD style="COLOR: #009900" noWrap>e</TD>
+    <TD style="COLOR: #009900" noWrap>c</TD>
+    <TD style="COLOR: #009900" noWrap>r</TD>
+    <TD style="COLOR: #009900" noWrap>e</TD>
+    <TD style="COLOR: #009900" noWrap>t</TD>
+    <TD style="COLOR: #009900" noWrap>4-byte-integer: 200</TD></TR>
+  <TR>
+    <TD style="COLOR: #ff0000"></TD>
+    <TD style="COLOR: #009900">Message Code 1 == "Login" (4 bytes)</TD>
+    <TD style="COLOR: #009900" colSpan=9>String, length 8 (12 bytes)</TD>
+    <TD style="COLOR: #009900" colSpan=7>String, length 6 (10 bytes)</TD>
+    <TD style="COLOR: #009900">Version (4 bytes)</TD></TR></TBODY></TABLE></DIV>This 
+sends a message to the server with message code 1. Since message code 1 is the 
+Login message, the server knows to expect two strings and an integer. The fist 
+string, we can see is of length 8 and contains the letters "JohnGalt". The 
+second string is of length 6 and contains the letters "secret". The remaining 
+integer is the number 200. 
+<P></P>
+<P>It is worth noting that messages with the same code may have different 
+payloads, depending on the direction of the message: client-to-server 
+(generally, a request) or server-to-client (generally, a response). In the above 
+example, the message is a Login message from the client to the server. The 
+server responds to the client with message that also has the message code 1 
+("Login"), but has a different payload. Login messages originating at the server 
+(we can think of it as a Login response message) contain a byte (1/0 for 
+success/fail) followed by a string (a message about the results of the login or 
+a server greeting). </P><A name=constants></A>
+<H2>Constants</H2>
+<P>The SoulSeek protocol makes use of several constants: </P>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout align=middle colSpan=2><B>Status Codes</B></TD></TR>
+  <TR>
+    <TD class=standout>-1</TD>
+    <TD class=standout>Unknown</TD></TR>
+  <TR>
+    <TD class=standout>0</TD>
+    <TD class=standout>Offline</TD></TR>
+  <TR>
+    <TD class=standout>1</TD>
+    <TD class=standout>Away</TD></TR>
+  <TR>
+    <TD class=standout>2</TD>
+    <TD class=standout>Online</TD></TR>
+  <TR>
+    <TD class=standout align=middle colSpan=2><B>Transfer Direction</B></TD></TR>
+  <TR>
+    <TD class=standout>0</TD>
+    <TD class=standout>Download</TD></TR>
+  <TR>
+    <TD class=standout>1</TD>
+    <TD class=standout>Upload</TD></TR>
+  <TR>
+    <TD class=standout align=middle colSpan=2><B>TODO: There are probably 
+      more...</B></TD></TR></TBODY></TABLE><!-- =========================================================== --><!-- =========================================================== --><!-- =========================================================== --><A 
+name=messages></A>
+<H2>Messages</H2><B>Jump directly to a server message:</B> <A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S1">Login:1</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S2">SetWaitPort:2</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S3">GetPeerAddress:3</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S5">AddUser:5</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S7">GetUserStatus:7</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S13">SayChatroom:13</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S14">JoinRoom:14</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S15">LeaveRoom:15</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S16">UserJoinedRoom:16</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S17">UserLeftRoom:17</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S18">ConnectToPeer:18</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S22">MessageUser:22</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S23">MessageAcked:23</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S26">FileSearch:26</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S28">SetStatus:28</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S35">SharedFoldersFiles:35</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S36">GetUserStats:36</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S40">QueuedDownloads:40</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S60">PlaceInLineResponse:60</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S62">RoomAdded:62</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S63">RoomRemoved:63</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S64">RoomList:64</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S65">ExactFileSearch:65</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S66">AdminMessage:66</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S67">GlobalUserList:67</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S68">TunneledMessage:68</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S69">PrivilegedUsers:69</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S91">AddToPrivileged:91</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S92">CheckPrivileges:92</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#S1001">CantConnectToPeer:1001</A> 
+<BR><B>Jump directly to a peer message:</B> <A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#Pinit">PeerInit</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#Pfw">PierceFW</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P4">GetSharedFileList:4</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P5">SharedFileList:5</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P9">FileSearchResult:9</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P15">UserInfoRequest:15</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P16">UserInfoReply:16</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P36">FolderContentsRequest:36</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P37">FolderContentsResponse:37</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P40">TransferRequest:40</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P41">TransferResponse:41</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P42">PlaceholdUpload:42</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P43">QueueUpload:43</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P44">PlaceInQueue:44</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P46">UploadFailed:46</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P50">QueueFailed:50</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P51">PlaceInQueueRequest:51</A> 
+<BR><BR><!-- =========================================================== --><!-- =========================================================== --><!-- =========================================================== --><A 
+name=serverMessages></A>
+<H2>Server Messages</H2><A name=S1></A>
+<H3>Login:1</H3>Client-to-Server (attempt to login)<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>1 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Username</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Password</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Version</TD></TR></TBODY></TABLE><BR>Server-to-Client (login 
+success/fail)<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>1 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>byte</TD>
+    <TD class=standout>success (0=fail, 1=success)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Login message (error message or greeting message)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Optional integer containing the external IPv4 address 
+      of the client. Only sent if the login was 
+successful.</TD></TR></TBODY></TABLE><BR><A name=S2></A>
+<H3>SetWaitPort:2</H3>Client-to-Server<BR>This is sent to the server to tell it 
+what port we are listening on.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>2 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>port number (generally 
+2234)</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>It is believed that 
+SetWaitPort messages are not sent from the server to the client.<BR><A 
+name=S3></A>
+<H3>GetPeerAddress:3</H3>Client-to-Server<BR>This is sent to the server to ask 
+for a peer's address (IP address and port), given the peer's username.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>3 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD 
+class=standout>username</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>This is 
+the response from the server.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>3 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username this address belongs to</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>IP address</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>port number</TD></TR></TBODY></TABLE><BR><A name=S5></A>
+<H3>AddUser:5</H3>Client-to-Server<BR>This message is sent when you want to 
+start monitoring the online status of a user. Once we start "watching" a user by 
+sending this message, the server will send (TODO: is the message AddUser or 
+GetUserStatus) messages to us whenever the user changes status (away, back, 
+offline, etc).<BR>Note: There also seems to be a GetPeerAddress response message 
+returned automatically, along with the AddUser response message--even though the 
+GetPeerAddress request was never made. Can anyone confirm this?<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>5 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username to start 
+watching</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>5 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username being watching</TD></TR>
+  <TR>
+    <TD class=standout>byte</TD>
+    <TD class=standout>whether the user exists</TD></TR></TBODY></TABLE><BR><A 
+name=S7></A>
+<H3>GetUserStatus:7</H3>Client-to-Server<BR>This message is used to request a 
+user's current status.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>7 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username to get status 
+of</TD></TR></TBODY></TABLE><BR>Server-to-client<BR>This message is used by the 
+server to report back to us a user's current status. 
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>7 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username this status applies to</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>status code, <A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#constants">see 
+      above</A></TD></TR></TBODY></TABLE><BR><A name=S13></A>
+<H3>SayChatroom:13</H3>Client-to-Server<BR>This message is sent to say something 
+in a chatroom.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>13 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD 
+class=standout>message</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>Somebody 
+said something in a chatroom we are in.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>13 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>message</TD></TR></TBODY></TABLE><BR><A name=S14></A>
+<H3>JoinRoom:14</H3>Client-to-Server<BR>We would like to join a chatroom.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>14 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>We have 
+joined the room. Here is a list of all the people in the room. (This could very 
+easily be a giant set of data!)<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>14 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>number of users in this room</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username #1</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username #2</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>number of status code intgers (should be the same as 
+      number of users in the above field)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>status code of username #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>status code of username #2</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>status code of username #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>number of statistics records (should be the same as 
+      number of users in the above field)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 1: avgspeed of username #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 1: downloadnum of username #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 1: something of username #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 1: files of username #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 1: dirs of username #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 2: avgspeed of username #2</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 2: downloadnum of username #2</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 2: something of username #2</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 2: files of username #2</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record 2: dirs of username #2</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record n: avgspeed of username #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record n: downloadnum of username #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record n: something of username #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record n: files of username #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>stats record n: dirs of username #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>number of slotsfull records</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>slotsfull field of username #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>slotsfull field of username #2</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>slotsfull field of username 
+#n</TD></TR></TBODY></TABLE><BR><A name=S15></A>
+<H3>LeaveRoom:15</H3>Client-to-Server<BR>We would like to leave a chatroom.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>15 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>Server 
+tells us we have left the room. Note that, in theory, this could happen at any 
+time--it may not necessarily be a response to a LeaveRoom message. It is 
+entirely possible that the server could send this to kick you out of a room 
+(although this author has never seen it happen). <BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>15 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR></TBODY></TABLE><BR><A name=S16></A>
+<H3>UserJoinedRoom:16</H3>Client-to-Server<BR>This message is not sent from the 
+client.<BR><BR>Server-to-Client<BR>User "x" has entered chat room "y".<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>16 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR></TBODY></TABLE><BR><A name=S17></A>
+<H3>UserLeftRoom:17</H3>Client-to-Server<BR>This message is not sent from the 
+client.<BR><BR>Server-to-Client<BR>User "x" has left chat room "y".<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>17 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR></TBODY></TABLE><BR><A name=S18></A>
+<H3>ConnectToPeer:18</H3>Client-to-Server If we cannot establish a direct 
+connection to a user (for example, they are behind a firewall), we send this 
+message to the server, which will tell the peer to connect back to us.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>18 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>type: "P"/"F" (see 
+PeerInit)</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>If someone cannot 
+establish a connection with us (for instance, we are behind a firewall), the 
+server sends this message to us. We then attempt to establish a direct 
+connection to the peer.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>18 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>type: "P"/"F" (see PeerInit)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>ip address</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>port</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR></TBODY></TABLE><BR><A name=S22></A>
+<H3>MessageUser:22</H3>Client-to-Server<BR>Send a private chat message to a 
+user<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>22 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD 
+class=standout>message</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>Somebody 
+sent us a private chat message<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>22 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>message ID</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>timestamp</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>message</TD></TR></TBODY></TABLE><BR><A name=S23></A>
+<H3>MessageAcked:23</H3>Client-to-Server<BR>Confirmation of receiving a private 
+chat message. If we do not send it, the server will keep sending the chat phrase 
+to us.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>23 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>message 
+ID</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>This message is not sent 
+from the server to the client.<BR><A name=S26></A>
+<H3>FileSearch:26</H3>Client-to-Server<BR>We send this to the server when we 
+want to search for something.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>26 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>search text</TD></TR></TBODY></TABLE><BR>Server-to-Client The 
+server sends this to tell us someone is searching for something.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>26 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>search text</TD></TR></TBODY></TABLE><BR><A name=S28></A>
+<H3>SetStatus:28</H3>Client-to-Server<BR>Change my away/online status.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>28 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>new status, <A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#constants">see 
+      above</A></TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>This message is not 
+sent from the server to the client. <A name=S35></A>
+<H3>SharedFoldersFiles:35</H3>Server-to-Client<BR>We send this to the server to 
+tell it how many files and folders we are sharing.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>35 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>folder count</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>file 
+count</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>This message is not sent 
+from the server to the client. <A name=S36></A>
+<H3>GetUserStats:36</H3>Client-to-Server This message is not sent from the 
+client to the server.<BR><BR>Server-to-Client<BR>The server sends this message 
+to us to indicate a change in a user's statistics.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>36 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>avgspeed</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>downloadnum</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>something</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>files</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>dirs</TD></TR></TBODY></TABLE><BR><A name=S40></A>
+<H3>QueuedDownloads:40</H3>Client-to-Server<BR>It is unknown whether this is 
+valid. <BR><BR>Server-to-Client<BR>The server sends this to indicate if someone 
+has download slots available.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>40 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>slotsfull</TD></TR></TBODY></TABLE><BR><A name=S60></A>
+<H3>PlaceInLineResponse:60</H3>Client-to-Server<BR>Ask the server what place in 
+line we are ...?<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>60 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token (token of original file request?)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>place (...?)</TD></TR></TBODY></TABLE><BR>Server-to-Client 
+The server sends this to indicate change in place in queue while we're waiting 
+for files from the other peer. 
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>60 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token (token of original file request?)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>place</TD></TR></TBODY></TABLE><BR><A name=S62></A>
+<H3>RoomAdded:62</H3>Client-to-Server<BR>Unknown if this is 
+valid.<BR><BR>Server-to-Client<BR>The server tells us a new room has been 
+added<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>62 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room name</TD></TR></TBODY></TABLE><BR><A name=S63></A>
+<H3>RoomRemoved:63</H3>Client-to-Server<BR>Unknown if this is 
+valid.<BR><BR>Server-to-Client<BR>The server tells us a room has been 
+removed<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>62 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>room name</TD></TR></TBODY></TABLE><BR><A name=S64></A>
+<H3>RoomList:64</H3>Client-to-Server<BR>Request a list of rooms? 
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>64 (Message 
+Code)</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>The server tells us a 
+list of rooms. 
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>64 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>number of rooms</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>name of room #1</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>name of room #2</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>name of room #n</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>user count records</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>user count in room #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>user count in room #2</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>user count in room #n</TD></TR></TBODY></TABLE><BR><A 
+name=S65></A>
+<H3>ExactFileSearch:65</H3>Client-to-Server<BR>It is unknown whether this is 
+valid. Normal file search is a symmetric operation (the Client-to-Server and 
+Server-to-Client messages are exactly the same and both valid), which would lead 
+one to believe that maybe the ExactFileSearch works the same way. 
+<BR><BR>Server-to-Client<BR>Someone is searching for a file with an exact 
+name<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>65 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>filename</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>folder</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>size</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>checksum</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR></TBODY></TABLE><BR><A name=S66></A>
+<H3>AdminMessage:66</H3>Client-to-Server<BR>unknown if this is 
+valid<BR><BR>Server-to-Client<BR>The admin is sending a broadcast message. ("The 
+service is going down for maintenance in 10 minutes!")<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>66 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>message</TD></TR></TBODY></TABLE><BR><A name=S67></A>
+<H3>GlobalUserList:67</H3>Client-to-Server<BR>We send this to get a global list 
+of all users online.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>67 (Message 
+Code)</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>The list of users.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>67 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout align=middle colSpan=2>See user list format in JoinRoom 
+      message</TD></TR></TBODY></TABLE><BR><A name=S68></A>
+<H3>TunneledMessage:68</H3>Used to tunnel a message through the server, I would 
+assume...(?)<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>68 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username (to? from? depends on direction?)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>code</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>IP address</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>port</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>message</TD></TR></TBODY></TABLE><BR><A name=S69></A>
+<H3>PrivilegedUsers:69</H3>Client-to-Server<BR>Get a list of all users that made 
+a donation<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>69 (Message 
+Code)</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>The returned list of 
+users<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>69 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>number of users</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username #1</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username #2</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username #n</TD></TR></TBODY></TABLE><BR><A name=S91></A>
+<H3>AddToPrivileged:91</H3>TODO, but likely something only an admin can do. We 
+would assume it takes a username and a duration. <A name=S92></A>
+<H3>CheckPrivileges:92</H3>Client-to-Server<BR>How much privileged time do I 
+have left from my donation?<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>92 (Message 
+Code)</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>You have this many days. 
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>69 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>number of days(?)</TD></TR></TBODY></TABLE><BR><A 
+name=S1001></A>
+<H3>CantConnectToPeer:1001</H3>Client-to-Server<BR>We send this to say we cannot 
+connect to a peer after it has asked us to connect.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>1001 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR></TBODY></TABLE><BR>Server-to-Client<BR>The 
+server sends this if we asked a peer to connect and it cannot do it. This means 
+a connection cannot be established in either direction--both parties are 
+firewalled.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>1001 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR></TBODY></TABLE><BR><BR><BR>
+<H3>Relogged?</H3>Server sends this if someone else logged in under our nickname 
+then disconnects us.<BR>
+<H3>RemoveUser?</H3>Client-to-Server<BR>Used when we no longer want to be kept 
+updated about a user's status. This message is defined in the Python code, but 
+not associated with a message code. Maybe it falls into one of the message code 
+gaps?<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>??? (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username to stop watching</TD></TR></TBODY></TABLE><BR>
+<H3>CantCreateRoom?</H3>Server-to-Client<BR>The server sends this to tell us a 
+new room cannot be created?<BR><!-- =========================================================== --><!-- =========================================================== --><!-- =========================================================== --><A 
+name=peerMessages></A>
+<H2>Peer Messages</H2><B>Jump directly to a peer message:</B> <A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#Pinit">PeerInit</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#Pfw">PierceFW</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P4">GetSharedFileList:4</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P5">SharedFileList:5</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P9">FileSearchResult:9</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P15">UserInfoRequest:15</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P16">UserInfoReply:16</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P36">FolderContentsRequest:36</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P37">FolderContentsResponse:37</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P40">TransferRequest:40</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P41">TransferResponse:41</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P42">PlaceholdUpload:42</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P43">QueueUpload:43</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P44">PlaceInQueue:44</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P46">UploadFailed:46</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P50">QueueFailed:50</A> 
+<A 
+href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#P51">PlaceInQueueRequest:51</A> 
+<BR><BR><A name=Pinit></A>
+<H3>PeerInit</H3>This message is sent by peer that initiated a connection, not 
+necessarily a peer that actually established it. Token apparently can be 
+anything. Type is 'P' if it's anything but filetransfer, 'F' otherwise.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout><B>byte</B></TD>
+    <TD class=standout>1 (Message Code) <B>Note that this is a 
+  BYTE!</A></B></TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>type</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>??? This seems to always be a constant (300 or 
+      0x0000012c)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR></TBODY></TABLE><BR><A name=Pfw></A>
+<H3>PierceFW</H3>Client has asked the server to tell the peer to contact us. The 
+token should be associated with the peer user.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout><B>byte</B></TD>
+    <TD class=standout>0 (Message Code) <B>Note that this is a 
+  BYTE!</A></B></TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR></TBODY></TABLE><BR><A name=P4></A>
+<H3>GetSharedFileList:4</H3>Client-to-Peer<BR>The client sends this to a peer to 
+ask for a list of files.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>4 (Message 
+Code)</TD></TR></TBODY></TABLE><BR>Peer-to-Client<BR>It is unknown whether this 
+is used.<BR><A name=P5></A>
+<H3>SharedFileList:5</H3>Client-to-Peer<BR>It is unknown whether this is 
+used.<BR><BR>Peer-to-Client<BR>A peer responds with this message when sent a 
+GetSharedFileList. This message can be a little complex, considering it contains 
+data from three nested loops: directories, which contain files, which contain 
+attributes. When implementing parsing of this message, it may be helpful to note 
+that within each directory, the list of files (each with its own list of 
+sttributes) is in the exact same format as the list of files returned from 
+FileSearchResult.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>5 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout align=middle colSpan=2>The following data is zlib 
+      compressed:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Number of directories</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Directory name #1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Number of files in directory #1</TD></TR>
+  <TR>
+    <TD class=standout>byte?</TD>
+    <TD class=standout>Dir#1, File#1 code(?)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Dir#1, File#1 filename</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Dir#1, File#1 size1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Dir#1, File#1 size2</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Dir#1, File#1 ext</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Dir#1, File#1 number of attributes</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Dir#1, File#1, Attr#1 type</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Dir#1, File#1, Attr#1 value</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Dir#1, File#1, Attr#n value</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:<BR>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Dir#n, File#n, Attr#n value</TD></TR></TBODY></TABLE><BR><A 
+name=P9></A>
+<H3>FileSearchResult:9</H3>Client-to-Peer<BR>It is unknown whether this is 
+used.<BR><BR>Peer-to-Client<BR>This is sent in response to a file search match. 
+Token is taken from original FileSearch message. You will note that the file 
+data is similar to that of SharedFileList, only without the outermost loop 
+(directories). It contains simply a list of files, each with a list of 
+attributes. <BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>9 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout align=middle colSpan=2>The following data is zlib 
+      compressed:</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>username</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>token</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Number of files</TD></TR>
+  <TR>
+    <TD class=standout>byte</TD>
+    <TD class=standout>File #1, code</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>File #1, filename</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>File #1, size1</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>File #1, size2</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>File #1, ext</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>File #1, number of attributes</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>File #1, Attr #1 type</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>File #1, Attr #1 value</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>:<BR>:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>File #n, Attr #n value</TD></TR>
+  <TR>
+    <TD class=standout>byte</TD>
+    <TD class=standout>Free upload slots</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Upload speed</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>In Queue</TD></TR></TBODY></TABLE><BR><A name=P15></A>
+<H3>UserInfoRequest:15</H3>Client-to-Peer<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>15 (Message 
+Code)</TD></TR></TBODY></TABLE><BR>Peer-to-Client<BR>It is unknown whether this 
+is used.<BR><BR><A name=P16></A>
+<H3>UserInfoReply:16</H3>Client-to-Peer<BR>It is unknown whether this is 
+used.<BR><BR>Peer-to-Client<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>16 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>User's description</TD></TR>
+  <TR>
+    <TD class=standout>byte</TD>
+    <TD class=standout>Does this user have a pic?</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>This data element is only present if the previous byte 
+      is true. This string contains the user pic file content</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>User uploads</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Total uploads</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Queue size</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Slots available</TD></TR></TBODY></TABLE><BR><A name=P36></A>
+<H3>FolderContentsRequest:36</H3><A name=P37></A>
+<H3>FolderContentsResponse:37</H3><A name=P40></A>
+<H3>TransferRequest:40</H3>Client-to-Peer<BR>Ask a peer for a file. See the 
+sequences section at the bottom of this document. Token is [new, unique token? 
+taken from another message?].<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>40 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Direction constant, <A 
+      href="http://soleseek.cvs.sourceforge.net/*checkout*/soleseek/SoleSeek/doc/protocol.html?revision=1.11&amp;content-type=text%2Fplain#constants">see 
+      above</A></TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Token</A></TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>filename</A></TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>This data field is only present if direction==1. File 
+      size.</A></TD></TR></TBODY></TABLE><BR>Peer-to-Client<BR>Tell a peer we are 
+about to send them a file. (Used when piercing a firewall?) The message format 
+is exactly the same as the client-to-peer version.<BR><BR><A name=P41></A>
+<H3>TransferResponse:41</H3>Client-to-Peer or Peer-to-Client<BR>This is the 
+proper response to a TransferRequest message. "Yes, I agree to take the file" or 
+"no, I do not agree to take the file." Token is taken from TransferRequest 
+message.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>41 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Token</TD></TR>
+  <TR>
+    <TD class=standout>byte</TD>
+    <TD class=standout>Allowed?</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>If Allowed is true:</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>Optionally, the file size</TD></TR>
+  <TR>
+    <TD align=middle colSpan=2>If Allowed is false:</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Optionally, a message explaining why the request was 
+      denied</TD></TR></TBODY></TABLE><BR><A name=P42></A>
+<H3>PlaceholdUpload:42</H3>Not sure yet.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>42 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Filename</TD></TR></TBODY></TABLE><BR><A name=P43></A>
+<H3>QueueUpload:43</H3>Not sure yet.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>43 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Filename</TD></TR></TBODY></TABLE><BR><A name=P44></A>
+<H3>PlaceInQueue:44</H3>Client-to-Peer<BR>It is unknown whether this is 
+used.<BR><BR>Peer-to-Client<BR>You are in queue position x for file y. This is 
+the response to a PlaceInQueueRequest.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>44 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>filename</TD></TR>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>place</TD></TR></TBODY></TABLE><BR><A name=P46></A>
+<H3>UploadFailed:46</H3>Not sure yet.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>46 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Filename</TD></TR></TBODY></TABLE><BR><A name=P50></A>
+<H3>QueueFailed:50</H3>Not sure yet.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>50 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Filename</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Reason</TD></TR></TBODY></TABLE><BR><A name=P51></A>
+<H3>PlaceInQueueRequest:51</H3>Client-to-Peer<BR>What place in your queue am I? 
+The response is a PlaceInQueue message.<BR>
+<TABLE cellSpacing=2 cellPadding=2 border=0>
+  <TBODY>
+  <TR>
+    <TD class=standout>integer</TD>
+    <TD class=standout>51 (Message Code)</TD></TR>
+  <TR>
+    <TD class=standout>string</TD>
+    <TD class=standout>Filename</TD></TR></TBODY></TABLE><BR>Peer-to-Client<BR>It is 
+unknown whether this is used.<BR><BR><A name=messageSequences></A>
+<H2>Message Sequences</H2>
+<P>This section will attempt to describe the message sequences for common 
+operations. </P>
+<H3>Login</H3>User logs in successfully, gets server greeting, gets privileged 
+user list, gets chat room list, starts monitoring buddies 
+<UL>
+  <LI>client sends Login message 
+  <LI>client sends SetWaitPort message 
+  <LI>server sends Login response message 
+  <LI>server automatically sends a RoomList response 
+  <LI>server automatically sends a PrivilegedUsers response 
+  <LI>client sends SharedFoldersFiles message 
+  <LI>client sends AddUser message for each buddy in buddy list 
+  <LI>server sends AddUser response for each buddy in the buddy list </LI></UL>
+<H3>Search</H3>TODO: User performs a search 
+<H3>Chat</H3>TODO: User enters a room, listens, speaks, then exits room 
+<H3>Obtaining Peer Address, basic</H3>This sequence will grab a peer's address 
+(ip+port), given the username, in the most simple manner. 
+<UL>
+  <LI>Client sends GetPeerAddress message 
+  <LI>Server sends GetPeerAddress response </LI></UL>
+<H3>Obtaining Peer Address, advanced</H3>This sequence will start monitoring a 
+user (as if that user were on your buddy list), and use that information to not 
+only obtain the address, but get notified if the user goes offline.</B> This is 
+the method that the Python SoulSeek client uses. 
+<UL>
+  <LI>client sends GetUserStatus message to server 
+  <LI>server responds with GetUserStatus message with status 
+  <LI>client sends AddUser message to server 
+  <LI>server responds with AddUser message 
+  <LI>server sends unsolicited GetPeerAddress message </LI></UL>
+<H2>&nbsp;</H2>
+<TABLE cellSpacing=0 cellPadding=7 border=1>
+  <TBODY>
+  <TR>
+    <TD><B>Note:</B> The following File Transfer scenarios cover every 
+      combination and permutation of the three states (client FW, peer FW, 
+      queue). They all assume the peer address has been obtained by one of the 
+      above methods. </TD></TR></TBODY></TABLE>
+<H3>File Transfer, basic</H3>Client may or may not be firewalled, peer is not 
+firewalled, peer has no wait queue<BR>
+<UL>
+  <LI>client opens a "P" type socket to the peer. This need not be a NEW socket. 
+  If a "P" type connection to the peer has already been established (for 
+  instance, because the peer has sent you a search result), it can be reused. 
+  <LI>client sends PeerInit "P" message immediately followed by TransferRequest 
+  message 
+  <LI>peer optionally sends back 12 bytes (the 5th is zero or one)<BR>(Note from 
+  Brian: I am a little bit worried about the random 12 bytes that sometimes get 
+  sent before a TransferResponse message. The first four bytes are obviously not 
+  a message length. Like I said in the comments, the Python code 
+  (slskproto.py:SlskProtoThread..process_peer_input()) has some wacky 
+  if-elseif-else logic in there that gets called only if it is a non "F" peer 
+  connection and it is the first message received.) 
+  <LI>peer sends back TransferResponse message 
+  <LI>client opens second socket to peer 
+  <LI>client sends PeerInit "F" message to peer 
+  <LI>peer sends file 
+  <LI>client closes second socket to peer </LI></UL>
+<H3>File Transfer, firewall</H3>TODO: Client is not firewalled, peer is 
+firewalled, peer has no wait queue 
+<H3>File Transfer, two firewalls</H3>Client is firewalled, peer is firewalled, 
+wait queue does not matter<BR>
+<UL>
+  <LI>A peer-to-peer connection in this situation is impossible</LI></UL>
+<H3>File Transfer, queue 1</H3>TODO: Client is not firewalled, peer is not 
+firewalled, peer has wait queue 
+<H3>File Transfer, queue 2</H3>TODO: Client is not firewalled, peer is 
+firewalled, peer has wait queue 
+<H3>File Transfer, queue 3</H3>TODO: Client is firewalled, peer is not 
+firewalled, peer has no wait queue 
+<HR noShade SIZE=2>
+End of Document </BODY></HTML>

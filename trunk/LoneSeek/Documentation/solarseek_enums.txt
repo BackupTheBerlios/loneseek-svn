@@ -1,0 +1,95 @@
+typedef enum
+{
+	Login = 1,
+	SetWaitPort = 2,
+	GetPeerAddress = 3,
+	TrackUser = 5,
+	GetUserStatus = 7,
+	SayChatroom = 13,
+	JoinRoom = 14,
+	LeaveRoom = 15,
+	UserJoinedRoom = 16,
+	UserLeftRoom = 17,
+	ConnectToPeer = 18,
+	MessageUser = 22,
+	MessageAcked = 23,
+	FileSearch = 26,
+	SetStatus = 28,		//fejta: -1 Unknown, 0 offline, 1 away, 2 online
+	Ping = 32,
+	UpdateUploadSpeed = 34, //fejta: what does this look like?
+	SharedFoldersFiles = 35,
+	GetUserStats = 36,
+	QueuedDownloads = 40,
+	OwnRecommendation = 50, //fejta: added from ethereal
+	AddThingsILike = 51, //fejta: added from ethereal list
+	RemoveThingsILike = 52, //fejta: added from ethereal
+	GetRecommendations = 54, //fejta added from ethereal
+	//fejta: Type 55 = 55
+	GetGlobalRankings = 56, //fejta: added from ethereal
+	GetUserRecommendations = 57, //fejta: added from ethereal
+	//fejta: admincommand = 58
+	PlaceInLineResponse = 60,
+	RoomAdded = 62,
+	RoomRemoved = 63,
+	RoomList = 64,
+	ExactFileSearch = 65,
+	AdminMessage = 66,
+	GlobalUserList = 67,
+	TunneledMessage = 68,
+	PrivilegedUsers = 69,
+	//fejta: GetParentList = 71 
+	//fejta: Type 73 = 73
+	ParentMinSpeed = 83, //fejta: added from ethereal
+	ParentSpeedConnectionRatio = 84, //fejta: added from ethereal
+	ParentInactivityBeforeDisconnect = 86, //fejta: added from ethereal
+	ServerInactivityBeforeDisconnect = 87, //fejta: added from ethereal
+	NodesInCacheBeforeDisconnect= 88, //fejta: added from ethereal
+	SecondsBeforePingChildren = 90, //fejta: added from ethereal
+	//fejta: addtoprivileged = 91
+	CheckPrivileges = 92,
+	//embedded message = 93
+	//become parent = 100
+	//random parent addresses = 102
+	//send wishlist entry = 103
+	Type104 = 104,
+	//get similar users = 110
+	//get recommendations for item = 111
+	//get similar users for item = 112
+	RoomTickerList = 113,
+	RoomTopic = 114,
+	RoomCreator = 115,
+	CantConnectToPeer = 1001
+} SoleSeekServerCode;
+
+//fejta: TODO: implement these messages: 90, 88, 87, 86, 
+
+//fejta: TODO: we have three types of peer connections: D = dist search, P = peer conn, F = fil trans.
+
+typedef enum
+{
+	PierceFireWall = 0,
+	PeerInit = 1,
+	GetSharedFileList = 4,
+	SharedFileList = 5,
+	PeerFileSearch = 8,		//token, string
+	FileSearchResult = 9,
+	UserInfoRequest = 15,
+	UserInfoReply = 16,
+	FolderContentsRequest = 36,
+	FolderContentsResponse = 37,
+	TransferRequest = 40,
+	TransferResponse = 41,
+	PlaceholdUpload = 42,
+	QueueUpload = 43,
+	PlaceInQueue = 44,
+	UploadFailed = 46,
+	QueueFailed = 50,
+	PlaceInQueueRequest = 51
+} SoleSeekPeerCode;
+
+typedef enum  {
+	QuestionBuddyIcon = 1776,
+	AnswerBuddyIcon = 1777,
+	AssertSolarSeekPrivileged = 1781,
+	AssertSolarSeekUser = 1782
+} SolarSeekPeerCodes;

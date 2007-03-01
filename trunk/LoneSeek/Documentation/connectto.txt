@@ -1,0 +1,2 @@
+Soulseek-Server:	213.6.52.191
+Soulseek-Port:		2240
