@@ -60,6 +60,8 @@
     <Compile Include="Packets\PacketTypes.cs" />
     <Compile Include="Packets\RoomListReply.cs" />
     <Compile Include="Packets\RoomListRequest.cs" />
+    <Compile Include="Packets\SayChatroomReply.cs" />
+    <Compile Include="Packets\SayChatroomRequest.cs" />
     <Compile Include="Packets\SetWaitPortRequest.cs" />
     <Compile Include="Packets\SetSharedCountRequest.cs" />
     <Compile Include="Peer.cs" />

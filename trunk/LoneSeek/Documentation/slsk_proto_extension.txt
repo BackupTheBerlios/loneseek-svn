@@ -1,4 +1,10 @@
 
+ /*
+  * Copyright (C) by Florian Stinglmayr
+  * Email: fstinglmayr@gmail.com
+  * Home: http://mindcompletion.blogspot.com
+  */
+ 
  This document contains extension to the original slsk_proto protocol
  specification. And marks if the documentation is still valid. If
  there is no remark about a packet it is proven that the original
@@ -13,15 +19,14 @@
                    is currently unclear which encoding is supported.
                    But UTF8 is assumed.
  Int               A four byte signed integer.
+ StringArray       A list of Strings. Most of the time the length of
+                   the array precededs the list.
+ IntArray          A list of Ints. Most of the time the length of the
+                   array is preceds the list.
  AD                Application/User defined value.
  SD                Server defined value.
  
-/*
- * Copyright (C) by Florian Stinglmayr
- * Email: fstinglmayr@gmail.com
- * Home: http://mindcompletion.blogspot.com
- */
- 
+
  --------------------------------------------------------------------
  All messages
  --------------------------------------------------------------------
@@ -37,7 +42,7 @@
  
 
  --------------------------------------------------------------------
- PacketType = Login, Value = 1, Direction = ClientToServer
+ PacketType=Login, Value=1, Direction=ClientToServer
  --------------------------------------------------------------------
  
     Datatype    Description             New?    Value
@@ -57,8 +62,9 @@
  
  The new value MAY be the initial status after the login.
  
+ 
  --------------------------------------------------------------------
-  PacketType = Login, Value = 1, Direction = ServerToClient
+  PacketType=Login, Value=1, Direction=ServerToClient
  --------------------------------------------------------------------
  
     Datatype    Description              New?   Value
@@ -76,16 +82,33 @@
   And again the meaning of the last integer is unkown. Maybe the 
   status?
  
+ 
  --------------------------------------------------------------------
-  PacketType = GetParentList, Value = 71, Direction = ClientToServer
+  PacketType=GetParentList, Value=71, Direction=ClientToServer
  --------------------------------------------------------------------
  
     Datatype    Description              New?   Value
    ------------------------------------------------------
-    Byte		?						 YES	?
+    Byte        ?                        YES    ?
     
  It is pretty unclear what this message is for. But we have seen the
  original client sending it. That's why we do the same.
+ 
+ 
+ --------------------------------------------------------------------
+  PacketTye=RoomTickerList, Value=113, Direction=ServerToClient
+ --------------------------------------------------------------------
+
+   Datatype     Description             New?    Value
+  -------------------------------------------------------
+   String       Room                    YES     SD
+   Int          Number of tickers       YES	    SD
+   StringArray  Tickers                 YES     SD
+   
+ This is how the tickers are being received. The first integer is
+ the number of tickers set for this room. The list follows. The list
+ is in the format "<USERNAME><SPACE><MESSAGE>". The message may 
+ contain spaces.
 
 
  --------------------------------------------------------------------

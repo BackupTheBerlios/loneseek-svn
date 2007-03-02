@@ -16,7 +16,7 @@ namespace LoneSeek
         /// </summary>
         public ChatRoomList(LoneSeekClient client)
         {
-            this.client = null;
+            this.client = client;
         }
 
         /// <summary>

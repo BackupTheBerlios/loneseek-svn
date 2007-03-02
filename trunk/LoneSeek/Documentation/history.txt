@@ -1,4 +1,13 @@
 
+  Legend
+ ---------------------------------------------------------------------
+  # ........Improved something.
+  + ........Added something.
+  ! ........Fixed something.
+  I ........General information (not code related).
+  ? ........Added something which is not yet tested.
+   
+
   Mar, 2nd 2007
  ---------------------------------------------------------------------
  
@@ -8,6 +17,16 @@
   # Edited code of the PacketFactory. Though it might take more memory
     and/or more runtime it is now more convinient to use.
   + Packet code for getting a users status.
+  + Added documentation for how to read the tickers of a chat room.
+  + Added project stub for LoneChat. An IRC-alike chat utility for
+    SoulSeek.
+  + Added packet code for receiving/sending message. Though the packet
+    dispatching routine is still missing.
+  + Added packet code for leaving rooms. Though the packet dispatching
+    routine, and some public accessable method is still missing.
+  ! Fixed a bug in the ChatRoomList class which caused the internal
+    reference to its LoneSeekClient to remain null.
+  I Wow a bunch of work for today!
 
   Feb, 28th 2007
  ---------------------------------------------------------------------
@@ -32,6 +51,7 @@
   + Tell the server which port are we listening on.
   # Improvements in the network code.
   + Tell the server how many files we share.
+  + Added the code for a GetParentList packet.
 
   Feb, 24th 2007
  ---------------------------------------------------------------------

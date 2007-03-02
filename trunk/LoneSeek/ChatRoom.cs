@@ -11,8 +11,9 @@ namespace LoneSeek
     public class ChatRoom
     {
         private String name = "";
-        private Int32 users = 0;
+        private Int32 usercount = 0;
         private LoneSeekClient client = null;
+        private List<User> users = new List<User>();
         private bool joined = false;
 
         /// <summary>
@@ -26,7 +27,7 @@ namespace LoneSeek
         {
             this.client = client;
             this.name = name;
-            this.users = count;
+            this.usercount = count;
         }
 
         /// <summary>
@@ -42,7 +43,7 @@ namespace LoneSeek
         /// </summary>
         public Int32 UserCount
         {
-            get { return users; }
+            get { return usercount; }
         }
 
         /// <summary>
@@ -50,7 +51,15 @@ namespace LoneSeek
         /// </summary>
         public bool Joined
         {
-            get { return joined; }
+            get { return (users.Count > 0); }
+        }
+
+        /// <summary>
+        /// Users in the room.
+        /// </summary>
+        public List<User> Users
+        {
+            get { return users; }
         }
 
         /// <summary>

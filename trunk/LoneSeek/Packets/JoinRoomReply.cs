@@ -13,6 +13,7 @@ namespace LoneSeek.Packets
     public class JoinRoomReply : Packet
     {
         private List<User> users = null;
+        private String room = "";
 
         public JoinRoomReply()
         {
@@ -33,7 +34,6 @@ namespace LoneSeek.Packets
             try
             {
                 Int32 statcount = 0;
-                String room;
                 String[] users;
                 Int32[] status;
                 List<Int32> avgspeed = new List<Int32>();
@@ -107,6 +107,22 @@ namespace LoneSeek.Packets
             catch (Exception)
             { // There was an error.
             }
+        }
+
+        /// <summary>
+        /// Retrieves the room.
+        /// </summary>
+        public String Room
+        {
+            get { return room; }
+        }
+
+        /// <summary>
+        /// Returns a number of users.
+        /// </summary>
+        public User[] Users
+        {
+            get { return users.ToArray(); }
         }
     }
 }

@@ -47,6 +47,9 @@ namespace LoneSeek.Packets
             // Get user status
             Register(typeof(GetUserStatusReply));
             Register(typeof(GetUserStatusRequest));
+            // Say something
+            Register(typeof(SayChatroomReply));
+            Register(typeof(SayChatroomRequest));
 
             initialized = true;
         }

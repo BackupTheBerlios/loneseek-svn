@@ -27,12 +27,13 @@ namespace LoneSeekGUI
                 client = new LoneSeekClient();
                 client.OnLogin += new LoneSeekEvent(client_OnLogin);
                 client.OnRoomListUpdated += new LoneSeekEvent(client_OnRoomListUpdated);
+                client.OnRoomJoined += new LoneSeekOnJoined(client_OnRoomJoined);
                 // Only share my avi files.
                 client.FileIndexer.AllowedExtensions.Add("avi");
                 // Share my southpark folder
-                client.FileIndexer.Add("d:\\southpark");
+                client.FileIndexer.Add("d:\\media\\");
                 // Specify incoming port
-                client.IncomingPort = 14446;
+                client.IncomingPort = 14447;
                 // Connect to the soulseek stuff
                 client.Connect("sk6.slsknet.org", 2240);
                 // Login as loneseek.
@@ -43,6 +44,21 @@ namespace LoneSeekGUI
             }
         }
 
+        void OnRoomJoined(object sender, ChatRoom room)
+        {
+            lsUsers.Items.Clear();
+
+            foreach (User user in room.Users)
+            {
+                lsUsers.Items.Add(user.Name);
+            }
+        }
+
+        void client_OnRoomJoined(object sender, ChatRoom room)
+        {
+            this.Invoke(new LoneSeekOnJoined(OnRoomJoined), sender, room);   
+        }
+
         void OnRoomListUpdated()
         {
             lvRooms.Items.Clear();
@@ -51,6 +67,7 @@ namespace LoneSeekGUI
             {
                 ListViewItem item = new ListViewItem(room.Name);
                 item.SubItems.Add(room.UserCount.ToString());
+                item.Tag = room;
                 // Add item
                 lvRooms.Items.Add(item);
             }
@@ -88,6 +105,20 @@ namespace LoneSeekGUI
         private void MainForm_Load(object sender, EventArgs e)
         {
 
+        }
+
+        private void lvRooms_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            int selected = 0;
+            ChatRoom room;
+
+            if (lvRooms.SelectedIndices.Count > 0)
+            { // Join this room.
+                selected = lvRooms.SelectedIndices[0];
+                room = lvRooms.Items[selected].Tag as ChatRoom;
+                // Join room.
+                room.Join();
+            }
         }
     }
 }

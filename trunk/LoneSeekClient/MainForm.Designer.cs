@@ -34,6 +34,7 @@
             this.lvRooms = new System.Windows.Forms.ListView();
             this.Room = new System.Windows.Forms.ColumnHeader();
             this.Users = new System.Windows.Forms.ColumnHeader();
+            this.lsUsers = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
             // 
             // bnConnect
@@ -62,7 +63,7 @@
             this.txText.Multiline = true;
             this.txText.Name = "txText";
             this.txText.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txText.Size = new System.Drawing.Size(414, 234);
+            this.txText.Size = new System.Drawing.Size(328, 234);
             this.txText.TabIndex = 2;
             // 
             // lvRooms
@@ -71,12 +72,14 @@
             this.Room,
             this.Users});
             this.lvRooms.FullRowSelect = true;
-            this.lvRooms.Location = new System.Drawing.Point(432, 30);
+            this.lvRooms.Location = new System.Drawing.Point(346, 30);
+            this.lvRooms.MultiSelect = false;
             this.lvRooms.Name = "lvRooms";
             this.lvRooms.Size = new System.Drawing.Size(209, 328);
             this.lvRooms.TabIndex = 3;
             this.lvRooms.UseCompatibleStateImageBehavior = false;
             this.lvRooms.View = System.Windows.Forms.View.Details;
+            this.lvRooms.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lvRooms_MouseDoubleClick);
             // 
             // Room
             // 
@@ -87,11 +90,20 @@
             // 
             this.Users.Text = "Users";
             // 
+            // lsUsers
+            // 
+            this.lsUsers.FormattingEnabled = true;
+            this.lsUsers.Location = new System.Drawing.Point(562, 30);
+            this.lsUsers.Name = "lsUsers";
+            this.lsUsers.Size = new System.Drawing.Size(230, 329);
+            this.lsUsers.TabIndex = 4;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(651, 370);
+            this.ClientSize = new System.Drawing.Size(818, 370);
+            this.Controls.Add(this.lsUsers);
             this.Controls.Add(this.lvRooms);
             this.Controls.Add(this.txText);
             this.Controls.Add(this.bnDisconnect);
@@ -112,6 +124,7 @@
         private System.Windows.Forms.ListView lvRooms;
         private System.Windows.Forms.ColumnHeader Room;
         private System.Windows.Forms.ColumnHeader Users;
+        private System.Windows.Forms.ListBox lsUsers;
     }
 }
 

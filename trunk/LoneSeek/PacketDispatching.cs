@@ -29,6 +29,8 @@ namespace LoneSeek
                 dispatchers[PacketType.Login] = new PacketDispatcher(DispatchLogin);
                 // Room list dispatcher
                 dispatchers[PacketType.RoomList] = new PacketDispatcher(DispatchRoomList);
+                // Join room dispatcher
+                dispatchers[PacketType.JoinRoom] = new PacketDispatcher(DispatchJoinRoom);
             }
         }
 
@@ -100,6 +102,34 @@ namespace LoneSeek
                 }
                 // Call the event
                 if (OnRoomListUpdated != null) OnRoomListUpdated(this);
+            }
+        }
+
+        /// <summary>
+        /// Dispatch if we would like to join a room.
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <param name="peer"></param>
+        private void DispatchJoinRoom(Packet packet, Peer peer)
+        {
+            JoinRoomReply reply = packet as JoinRoomReply;
+            String roomname = reply.Room;
+            ChatRoom room = null;
+            User[] users = reply.Users;
+
+            if (roomname != String.Empty || roomname != null)
+            { // Get the room.
+                room = roomlist.Find(roomname);
+                if (room != null)
+                { // Otherwise: Error no such room in the list
+                    lock (room)
+                    {
+                        // Add the users to our list.
+                        room.Users.AddRange(users);
+                        // Call event
+                        if (OnRoomJoined != null) OnRoomJoined(this, room);
+                    }
+                }
             }
         }
     }

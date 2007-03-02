@@ -35,6 +35,15 @@ namespace LoneSeek
         }
 
         /// <summary>
+        /// Sets or retrieves the users name.
+        /// </summary>
+        public String Name
+        {
+            get { return name; }
+            set { name = value; }
+        }
+
+        /// <summary>
         /// Retrieves the average speed of the user.
         /// </summary>
         public Int32 AverageSpeed

@@ -66,6 +66,7 @@ namespace LoneSeek
         public event LoneSeekEvent OnDisconnected;
         public event LoneSeekEvent OnLogin;
         public event LoneSeekEvent OnRoomListUpdated;
+        public event LoneSeekOnJoined OnRoomJoined;
 
         /// <summary>
         /// Used to queue a packet dispatching thing.
