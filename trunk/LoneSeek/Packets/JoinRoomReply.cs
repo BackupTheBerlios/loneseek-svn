@@ -40,8 +40,7 @@ namespace LoneSeek.Packets
                 List<Int32> something = new List<Int32>();
                 List<Int32> cntfiles = new List<Int32>();
                 List<Int32> cntdirs = new List<Int32>();
-                List<Int32> cntslotsfull = new List<Int32>();
-                Int32[] states;
+                Int32[] cntslotsfull;
 
                 // The first thing is the room we have joined.
                 room = stream.ReadString();
@@ -68,19 +67,39 @@ namespace LoneSeek.Packets
                     // Read Number of directories
                     read = stream.ReadInt();
                     cntdirs.Add(read);
-                    // Read number of full slots.
-                    read = stream.ReadInt();
-                    cntslotsfull.Add(read);
                     --statcount;
                 }
                 // Last but not least: read states.
-                states = stream.ReadInts();
+                cntslotsfull = stream.ReadInts();
                 // Now assemble the users
                 for (int i = 0; i < users.Length; ++i)
                 {
                     User user = new User(users[i]);
                     // Now apply the rest of the data.
-                    // **TODO**
+                    if (i < status.Length)
+                    { // Status of the user
+                        user.Status = (UserStatus)status[i];
+                    }
+                    if (i < avgspeed.Count)
+                    { // Average speed
+                        user.AverageSpeed = avgspeed[i];
+                    }
+                    if (i < something.Count)
+                    { // Unkown
+                        user.Unkown = something[i];
+                    }
+                    if (i < cntfiles.Count)
+                    { // Number of files.
+                        user.Files = cntfiles[i];
+                    }
+                    if (i < cntdirs.Count)
+                    { // Number of directories.
+                        user.Directories = cntdirs[i];
+                    }
+                    if (i < cntslotsfull.Length)
+                    { // Number of full slots.
+                        user.FullSlots = cntslotsfull[i];
+                    }
                     // And finally add him to our list
                     this.users.Add(user);
                 }

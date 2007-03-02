@@ -27,20 +27,26 @@ namespace LoneSeek.Packets
         public static void Initialize()
         {
             // Register login packet
-            Register(PacketType.Login, PacketDirection.ClientToServer, typeof(LoginRequest));
-            Register(PacketType.Login, PacketDirection.ServerToClient, typeof(LoginReply));
+            Register(typeof(LoginRequest));
+            Register(typeof(LoginReply));
             // Set port packet
-            Register(PacketType.SetWaitPort, PacketDirection.ClientToServer, typeof(SetWaitPortRequest));
+            Register(typeof(SetWaitPortRequest));
             // Shared files and folders
-            Register(PacketType.SharedFoldersFiles, PacketDirection.ClientToServer, typeof(SetSharedCountRequest));
+            Register(typeof(SetSharedCountRequest));
             // Get parent list
-            Register(PacketType.GetParentList, PacketDirection.ClientToServer, typeof(GetParentListRequest));
+            Register(typeof(GetParentListRequest));
             // Room list
-            Register(PacketType.RoomList, PacketDirection.ClientToServer, typeof(RoomListRequest));
-            Register(PacketType.RoomList, PacketDirection.ServerToClient, typeof(RoomListReply));
+            Register(typeof(RoomListRequest));
+            Register(typeof(RoomListReply));
             // Join a room
-            Register(PacketType.JoinRoom, PacketDirection.ClientToServer, typeof(JoinRoomRequest));
-            Register(PacketType.JoinRoom, PacketDirection.ServerToClient, typeof(JoinRoomReply));
+            Register(typeof(JoinRoomRequest));
+            Register(typeof(JoinRoomReply));
+            // Leave a room
+            Register(typeof(LeaveRoomReply));
+            Register(typeof(LeaveRoomRequest));
+            // Get user status
+            Register(typeof(GetUserStatusReply));
+            Register(typeof(GetUserStatusRequest));
 
             initialized = true;
         }
@@ -49,17 +55,17 @@ namespace LoneSeek.Packets
         /// Register a packet.
         /// </summary>
         /// <param name="type">Type to register.</param>
-        /// <param name="packet">Packet corresponding to the type.</param>
-        /// <param name="direction">Direction of the packet.</param>
-        public static void Register(PacketType type, PacketDirection direction, Type packetType)
+        public static void Register(Type packetType)
         {
             if (packetType.IsSubclassOf(typeof(Packet)))
             {
-                if (!types.ContainsKey(type))
+                Packet obj = Activator.CreateInstance(packetType) as Packet;
+                if (!types.ContainsKey(obj.Type))
                 { // Register type.
-                    types[type] = new Dictionary<PacketDirection, Type>();
+                    types[obj.Type] = new Dictionary<PacketDirection, Type>();
                 }
-                types[type][direction] = packetType;
+                types[obj.Type][obj.Direction] = packetType;
+                obj = null; // Dispose our temporary object.
             }
         }
 
