@@ -42,11 +42,15 @@
     <Compile Include="LoneSeekException.cs" />
     <Compile Include="PacketDispatching.cs" />
     <Compile Include="Packets\GetParentListRequest.cs" />
+    <Compile Include="Packets\GetUserStatusReply.cs" />
+    <Compile Include="Packets\GetUserStatusRequest.cs" />
     <Compile Include="Packets\Hash.cs" />
     <Compile Include="Packets\Helper.cs" />
     <Compile Include="Packets\InvalidPacketException.cs" />
     <Compile Include="Packets\JoinRoomReply.cs" />
     <Compile Include="Packets\JoinRoomRequest.cs" />
+    <Compile Include="Packets\LeaveRoomReply.cs" />
+    <Compile Include="Packets\LeaveRoomRequest.cs" />
     <Compile Include="Packets\LoginRequest.cs" />
     <Compile Include="Packets\LoginReply.cs" />
     <Compile Include="Packets\NotImplemented.cs" />
@@ -65,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\connectto.txt" />
+    <Content Include="Documentation\history.txt" />
     <Content Include="Documentation\slsk_proto.html" />
     <Content Include="Documentation\slsk_proto_extension.txt" />
     <Content Include="Documentation\solarseek_enums.txt" />

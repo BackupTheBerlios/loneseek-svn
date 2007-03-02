@@ -1,0 +1,43 @@
+
+  Mar, 2nd 2007
+ ---------------------------------------------------------------------
+ 
+  # Improved code for joining rooms. It shall now read all the data
+    from the users in a safe manner.
+  + Packet code for leaving a chat room.
+  # Edited code of the PacketFactory. Though it might take more memory
+    and/or more runtime it is now more convinient to use.
+  + Packet code for getting a users status.
+
+  Feb, 28th 2007
+ ---------------------------------------------------------------------
+
+  + Support for listing chatrooms.
+  + Code for joining a chatroom.
+  ! Fixed a bug in ReadStrings() causing LoneSeek to hang up.
+  ! Fixed a bug when Read() does not read all requested bytes off the
+    stream. Using ReadBytes() now.
+  ! Fixed a bug where an event got invoked without being checked for
+    null.
+  + History file.
+
+  Feb, 25th 2007
+ ---------------------------------------------------------------------
+ 
+  # Packet reading algorithm improved. Code completly rewritten and
+    put the code into a new class "PacketStream"
+  + New events: OnLogin, OnConnected, OnDisconnected
+  + File indexing.
+  + Listening on our public port.
+  + Tell the server which port are we listening on.
+  # Improvements in the network code.
+  + Tell the server how many files we share.
+
+  Feb, 24th 2007
+ ---------------------------------------------------------------------
+ 
+  + Library/frontend architecture.
+  + Connection to the SlSk server.
+  + Retrieving welcome message.
+  + Login via username/password
+  
