@@ -1,0 +1,22 @@
+  
+  Legend
+ ---------------------------------------------------------------------
+  # ........Improved something.
+  + ........Added something.
+  ! ........Fixed something.
+  I ........General information (not code related).
+  ? ........Added something which is not yet tested.
+
+  Mar, 4th 2007
+ ---------------------------------------------------------------------
+
+  + Added a dialog to edit server connections.
+  + Added a configuration utility which stores all connections as XML.
+  + Added tab based interface.
+
+
+  Mar, 2nd 2007
+ ---------------------------------------------------------------------
+
+  + Added LoneChat project.
+  + Added MainWindow

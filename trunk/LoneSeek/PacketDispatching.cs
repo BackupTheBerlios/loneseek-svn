@@ -31,6 +31,10 @@ namespace LoneSeek
                 dispatchers[PacketType.RoomList] = new PacketDispatcher(DispatchRoomList);
                 // Join room dispatcher
                 dispatchers[PacketType.JoinRoom] = new PacketDispatcher(DispatchJoinRoom);
+                // Left room dispatcher
+                dispatchers[PacketType.LeaveRoom] = new PacketDispatcher(DispatchLeaveRoom);
+                // SayChatroom dispatcher
+                dispatchers[PacketType.SayChatRoom] = new PacketDispatcher(DispatchRoomMessage);
             }
         }
 
@@ -61,21 +65,27 @@ namespace LoneSeek
         {
             LoginReply login = packet as LoginReply;
 
-            // Now let's see if we have successfuly logged in.
-            loggedIn = login.Successful;
-            if (loggedIn)
-            { // Read the rest only if it worked.
-                welcomeMessage = login.WelcomeMessage.Replace("\n", "\r\n");
-                publicAddress = login.IPAddress;
-                // Send the rest of our data.
-                PostLogin();
+            try
+            {
+                // Now let's see if we have successfuly logged in.
+                loggedIn = login.Successful;
+                if (loggedIn)
+                { // Read the rest only if it worked.
+                    welcomeMessage = login.WelcomeMessage.Replace("\n", "\r\n");
+                    publicAddress = login.IPAddress;
+                    // Send the rest of our data.
+                    PostLogin();
+                }
+                else
+                { // Some how remove the old values.
+                    welcomeMessage = "";
+                    publicAddress = IPAddress.Any;
+                }
+                if (OnLogin != null) OnLogin(this);
             }
-            else
-            { // Some how remove the old values.
-                welcomeMessage = "";
-                publicAddress = IPAddress.Any;
+            catch (Exception)
+            {
             }
-            if (OnLogin != null) OnLogin(this);         
         }
 
         /// <summary>
@@ -117,19 +127,78 @@ namespace LoneSeek
             ChatRoom room = null;
             User[] users = reply.Users;
 
-            if (roomname != String.Empty || roomname != null)
-            { // Get the room.
+            try
+            {
                 room = roomlist.Find(roomname);
-                if (room != null)
-                { // Otherwise: Error no such room in the list
-                    lock (room)
-                    {
-                        // Add the users to our list.
-                        room.Users.AddRange(users);
-                        // Call event
-                        if (OnRoomJoined != null) OnRoomJoined(this, room);
-                    }
+                lock (room)
+                {
+                    // Add the users to our list.
+                    room.Users.AddRange(users);
+                    // Call event
+                    if (OnRoomJoined != null) OnRoomJoined(this, room);
                 }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Dispatches when we have "left a room".
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <param name="peer"></param>
+        private void DispatchLeaveRoom(Packet packet, Peer peer)
+        {
+            LeaveRoomReply reply = packet as LeaveRoomReply;
+            String roomname = reply.Room;
+            ChatRoom room = null;
+
+            try
+            {
+                room = roomlist.Find(roomname);
+                lock (room)
+                { // Lock it so we can clear the user list.
+                    room.Users.Clear();
+                    // This would automatically cause Joined to return false.
+                    if (OnRoomLeft != null) OnRoomLeft(this, room);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Dispatches a message from a room.
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <param name="peer"></param>
+        private void DispatchRoomMessage(Packet packet, Peer peer)
+        {
+            SayChatroomReply reply = packet as SayChatroomReply;
+            ChatMessage message = new ChatMessage();
+            ChatRoom room = null;
+
+            try
+            {
+                room = roomlist.Find(reply.Room);
+                if (room == null)
+                { // Room must not be null.
+                    throw new ArgumentNullException("room");
+                }
+                // Construct message.
+                message.IsPrivateMessage = false;
+                message.Sender = reply.User;
+                message.Message = reply.Message;
+                // He has sent it now.
+                message.Time = DateTime.Now;
+                message.Room = reply.Room;
+                // Call event.
+                if (OnChatMessage != null) OnChatMessage(this, message, room);
+            }
+            catch (Exception)
+            {
             }
         }
     }

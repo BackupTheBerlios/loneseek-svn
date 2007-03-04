@@ -12,6 +12,14 @@ namespace LoneChat
         [STAThread]
         static void Main()
         {
+            // Load configurations
+            try
+            {
+                Configuration.Load();
+            }
+            catch (Exception)
+            {
+            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new LoneChat());

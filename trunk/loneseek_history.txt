@@ -7,6 +7,19 @@
   I ........General information (not code related).
   ? ........Added something which is not yet tested.
    
+ 
+  Mar, 4th 2007
+ ---------------------------------------------------------------------
+
+  + Public methods to send chat messages in rooms.
+  + Public methods to leave a room.
+  + Packet dispatchers for receiving messages and if you have left a
+    room.
+  ! Fixed a bug where the methods checked against "joined" which was
+    always false. They now check against "Joined".
+  ! Fixed a bug where the wrong event for leaving a room has been
+    called.
+
 
   Mar, 2nd 2007
  ---------------------------------------------------------------------

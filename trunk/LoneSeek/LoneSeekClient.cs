@@ -66,7 +66,9 @@ namespace LoneSeek
         public event LoneSeekEvent OnDisconnected;
         public event LoneSeekEvent OnLogin;
         public event LoneSeekEvent OnRoomListUpdated;
-        public event LoneSeekOnJoined OnRoomJoined;
+        public event LoneSeekRoomEvent OnRoomJoined;
+        public event LoneSeekRoomEvent OnRoomLeft;
+        public event LoneSeekChatMessageEvent OnChatMessage;
 
         /// <summary>
         /// Used to queue a packet dispatching thing.
@@ -357,10 +359,6 @@ namespace LoneSeek
                 { // Only connect if we are not listening.
                     IPAddress addr;
 
-                    if (endp == null)
-                    { // No incoming port specified.
-                        throw new ApplicationException("No incoming port specified.");
-                    }
                     if (!IPAddress.TryParse(host, out addr))
                     {
                         IPHostEntry entry = Dns.GetHostEntry(host);
@@ -381,14 +379,16 @@ namespace LoneSeek
                     // Start dispatching queue
                     queueThread = new Thread(queueStart);
                     queueThread.Start();
-                    // Create incoming port
-                    listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    // Listen on any on the port specified
-                    listenSocket.Bind(endp);
-                    // Start listening
-                    listenSocket.Listen(5);
-                    // Event handler for incoming connections.
-                    listenSocket.BeginAccept(acceptCallback, null);
+                    if (endp != null)
+                    { // Create incoming port, but only if the user specified a port.
+                        listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                        // Listen on any on the port specified
+                        listenSocket.Bind(endp);
+                        // Start listening
+                        listenSocket.Listen(5);
+                        // Event handler for incoming connections.
+                        listenSocket.BeginAccept(acceptCallback, null);
+                    }
 
                     if (OnConnected != null) OnConnected(this);
                 }
@@ -462,10 +462,13 @@ namespace LoneSeek
             shared.SharedFolders = fileIndex.Directories;
             // Tell the server how much we share
             Send(shared);
-            // Tell the server our port
-            waitport.Port = incomingPort;
-            // Advertise our wait port
-            Send(waitport);
+            // Only tell him the port if we have one.
+            if (endp != null)
+            { // Tell the server our port
+                waitport.Port = incomingPort;
+                // Advertise our wait port
+                Send(waitport);
+            }
         }
 
         /// <summary>

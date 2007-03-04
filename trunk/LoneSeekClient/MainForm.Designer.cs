@@ -35,6 +35,7 @@
             this.Room = new System.Windows.Forms.ColumnHeader();
             this.Users = new System.Windows.Forms.ColumnHeader();
             this.lsUsers = new System.Windows.Forms.ListBox();
+            this.bnLeave = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // bnConnect
@@ -80,6 +81,7 @@
             this.lvRooms.UseCompatibleStateImageBehavior = false;
             this.lvRooms.View = System.Windows.Forms.View.Details;
             this.lvRooms.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lvRooms_MouseDoubleClick);
+            this.lvRooms.SelectedIndexChanged += new System.EventHandler(this.lvRooms_SelectedIndexChanged);
             // 
             // Room
             // 
@@ -98,11 +100,22 @@
             this.lsUsers.Size = new System.Drawing.Size(230, 329);
             this.lsUsers.TabIndex = 4;
             // 
+            // bnLeave
+            // 
+            this.bnLeave.Location = new System.Drawing.Point(163, 31);
+            this.bnLeave.Name = "bnLeave";
+            this.bnLeave.Size = new System.Drawing.Size(105, 23);
+            this.bnLeave.TabIndex = 5;
+            this.bnLeave.Text = "Leave";
+            this.bnLeave.UseVisualStyleBackColor = true;
+            this.bnLeave.Click += new System.EventHandler(this.bnLeave_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(818, 370);
+            this.Controls.Add(this.bnLeave);
             this.Controls.Add(this.lsUsers);
             this.Controls.Add(this.lvRooms);
             this.Controls.Add(this.txText);
@@ -125,6 +138,7 @@
         private System.Windows.Forms.ColumnHeader Room;
         private System.Windows.Forms.ColumnHeader Users;
         private System.Windows.Forms.ListBox lsUsers;
+        private System.Windows.Forms.Button bnLeave;
     }
 }
 

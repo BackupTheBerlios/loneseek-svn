@@ -14,6 +14,7 @@ namespace LoneSeekGUI
     {
         private delegate void OnEvent();
         private LoneSeekClient client = null;
+        private ChatRoom joined = null;
 
         public MainForm()
         {
@@ -27,7 +28,9 @@ namespace LoneSeekGUI
                 client = new LoneSeekClient();
                 client.OnLogin += new LoneSeekEvent(client_OnLogin);
                 client.OnRoomListUpdated += new LoneSeekEvent(client_OnRoomListUpdated);
-                client.OnRoomJoined += new LoneSeekOnJoined(client_OnRoomJoined);
+                client.OnRoomJoined += new LoneSeekRoomEvent(client_OnRoomJoined);
+                client.OnChatMessage += new LoneSeekChatMessageEvent(client_OnChatMessage);
+                client.OnRoomLeft += new LoneSeekRoomEvent(client_OnRoomLeft);
                 // Only share my avi files.
                 client.FileIndexer.AllowedExtensions.Add("avi");
                 // Share my southpark folder
@@ -44,6 +47,28 @@ namespace LoneSeekGUI
             }
         }
 
+        void OnRoomLeft(object sender, ChatRoom room)
+        {
+            txText.AppendText("Left room: " + room.Name + "\r\n");
+            txText.ScrollToCaret();
+        }
+
+        void client_OnRoomLeft(object sender, ChatRoom room)
+        {
+            this.Invoke(new LoneSeekRoomEvent(OnRoomLeft), sender, room);
+        }
+
+        void OnChatMessage(object sender, ChatMessage message, ChatRoom room)
+        {
+            txText.AppendText("<" + message.Sender + "@" + message.Room + "> " + message.Message + "\r\n");
+            txText.ScrollToCaret();
+        }
+
+        void client_OnChatMessage(object sender, ChatMessage message, ChatRoom room)
+        {
+            this.Invoke(new LoneSeekChatMessageEvent(OnChatMessage), sender, message, room);
+        }
+
         void OnRoomJoined(object sender, ChatRoom room)
         {
             lsUsers.Items.Clear();
@@ -52,11 +77,14 @@ namespace LoneSeekGUI
             {
                 lsUsers.Items.Add(user.Name);
             }
+            txText.AppendText("Joined room " + room.Name + "\r\n");
+            txText.AppendText("Users in the room " + room.UserCount.ToString() + "\r\n");
+            txText.ScrollToCaret();
         }
 
         void client_OnRoomJoined(object sender, ChatRoom room)
         {
-            this.Invoke(new LoneSeekOnJoined(OnRoomJoined), sender, room);   
+            this.Invoke(new LoneSeekRoomEvent(OnRoomJoined), sender, room);   
         }
 
         void OnRoomListUpdated()
@@ -80,11 +108,11 @@ namespace LoneSeekGUI
 
         void OnLogin()
         {
-            txText.AppendText("Login successful: " + client.LoggedIn);
+            txText.AppendText("Login successful: " + client.LoggedIn + "\r\n");
             if (client.LoggedIn)
             {
                 txText.AppendText(client.WelcomeMessage);
-                txText.AppendText("\r\nYour IP: " + client.PublicAddress);
+                txText.AppendText("Your IP: " + client.PublicAddress + "\r\n");
             }
         }
 
@@ -110,15 +138,28 @@ namespace LoneSeekGUI
         private void lvRooms_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             int selected = 0;
-            ChatRoom room;
 
             if (lvRooms.SelectedIndices.Count > 0)
             { // Join this room.
                 selected = lvRooms.SelectedIndices[0];
-                room = lvRooms.Items[selected].Tag as ChatRoom;
+                joined = lvRooms.Items[selected].Tag as ChatRoom;
                 // Join room.
-                room.Join();
+                joined.Join();
             }
         }
+
+        private void lvRooms_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void bnLeave_Click(object sender, EventArgs e)
+        {
+            if (joined != null)
+            { // Leave joined chat room.
+                joined.Leave();
+            }
+        }
+
     }
 }

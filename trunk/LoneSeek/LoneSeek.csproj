@@ -33,6 +33,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChatMessage.cs" />
     <Compile Include="ChatRoom.cs" />
     <Compile Include="ChatRoomList.cs" />
     <Compile Include="Events.cs" />
@@ -71,7 +72,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\connectto.txt" />
-    <Content Include="Documentation\history.txt" />
     <Content Include="Documentation\slsk_proto.html" />
     <Content Include="Documentation\slsk_proto_extension.txt" />
     <Content Include="Documentation\solarseek_enums.txt" />
