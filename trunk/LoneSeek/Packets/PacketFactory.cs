@@ -50,6 +50,9 @@ namespace LoneSeek.Packets
             // Say something
             Register(typeof(SayChatroomReply));
             Register(typeof(SayChatroomRequest));
+            // Private message to a user
+            Register(typeof(MessageUserReply));
+            Register(typeof(MessageUserRequest));
 
             initialized = true;
         }
