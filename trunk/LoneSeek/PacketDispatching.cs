@@ -254,7 +254,12 @@ namespace LoneSeek
 
                 // Find the chatroom it goes.
                 room = roomlist.Find(reply.Room);
-
+                lock (room)
+                {
+                    User user = new User(reply.User);
+                    // Add the user to the room.
+                    room.Users.Add(user);
+                }
                 if (room != null)
                 { 
                     if (OnUserJoinedRoom != null) OnUserJoinedRoom(this, reply.User, room);
@@ -280,6 +285,20 @@ namespace LoneSeek
 
                 // Find the chatroom it goes.
                 room = roomlist.Find(reply.Room);
+                lock (room)
+                {
+                    // Delete the user.
+                    // **FIXME** Someone should improve the speed of this code.
+                    for ( int i = 0; i < room.Users.Count; ++i )
+                    {
+                        User user = room.Users[i];
+                        if (String.Compare(user.Name, reply.User) == 0)
+                        {
+                            room.Users.RemoveAt(i);
+                            return;
+                        }
+                    }
+                }
 
                 if (room != null)
                 {

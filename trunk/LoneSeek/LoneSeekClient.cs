@@ -298,6 +298,23 @@ namespace LoneSeek
         }
 
         /// <summary>
+        /// Send a private message to the user.
+        /// </summary>
+        /// <param name="message">Message to send.</param>
+        public void Send(User user, String message)
+        {
+            if (message != "" && message != null)
+            {
+                MessageUserRequest request = new MessageUserRequest();
+
+                request.User = user.Name;
+                request.Message = message;
+                // Send packet
+                Send(request);
+            }
+        }
+
+        /// <summary>
         /// Thread to do Select() on our socket.
         /// </summary>
         private void RecvThread()

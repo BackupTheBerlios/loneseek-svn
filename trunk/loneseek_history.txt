@@ -6,8 +6,18 @@
   ! ........Fixed something.
   I ........General information (not code related).
   ? ........Added something which is not yet tested.
-   
- 
+    
+
+  Mar, 6th 2007
+ ---------------------------------------------------------------------
+
+  + Added code for getting notified when someone leaves or joins the
+    room.
+  + Added code for sending a private message.
+  + Fixed several bugs where the room login message might not have
+    been completely read.
+
+
   Mar, 4th 2007
  ---------------------------------------------------------------------
 
