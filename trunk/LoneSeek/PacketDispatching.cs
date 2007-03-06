@@ -35,6 +35,12 @@ namespace LoneSeek
                 dispatchers[PacketType.LeaveRoom] = new PacketDispatcher(DispatchLeaveRoom);
                 // SayChatroom dispatcher
                 dispatchers[PacketType.SayChatRoom] = new PacketDispatcher(DispatchRoomMessage);
+                // Private messages
+                dispatchers[PacketType.MessageUser] = new PacketDispatcher(DispatchMessageUser);
+                // User left a room.
+                dispatchers[PacketType.UserLeftRoom] = new PacketDispatcher(DispatchUserLeftRoom);
+                // User joined a room.
+                dispatchers[PacketType.UserJoinedRoom] = new PacketDispatcher(DispatchUserJoined);
             }
         }
 
@@ -196,6 +202,89 @@ namespace LoneSeek
                 message.Room = reply.Room;
                 // Call event.
                 if (OnChatMessage != null) OnChatMessage(this, message, room);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Dispatches a private message.
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <param name="peer"></param>
+        private void DispatchMessageUser(Packet packet, Peer peer)
+        {
+            MessageUserReply reply = packet as MessageUserReply;
+            MessageAckedRequest ack = new MessageAckedRequest();
+            ChatMessage message = new ChatMessage();
+
+            try
+            {
+                ack.MessageId = reply.MessageId;
+                // Send an ack out for the message
+                Send(ack);
+
+                // Now dispatch this message
+                message.Id = reply.MessageId;
+                message.Message = reply.Message;
+                message.Sender = reply.User;
+                message.Time = reply.Time;
+                message.IsPrivateMessage = true;
+
+                if (OnPrivateMessage != null) OnPrivateMessage(this, message);
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Dispatch when someone came in.
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <param name="peer"></param>
+        private void DispatchUserJoined(Packet packet, Peer peer)
+        {
+            UserJoinedReply reply = packet as UserJoinedReply;
+
+            try
+            {
+                ChatRoom room = null;
+
+                // Find the chatroom it goes.
+                room = roomlist.Find(reply.Room);
+
+                if (room != null)
+                { 
+                    if (OnUserJoinedRoom != null) OnUserJoinedRoom(this, reply.User, room);
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Dispatch when someone went out.
+        /// </summary>
+        /// <param name="packet"></param>
+        /// <param name="peer"></param>
+        private void DispatchUserLeftRoom(Packet packet, Peer peer)
+        {
+            UserJoinedReply reply = packet as UserJoinedReply;
+
+            try
+            {
+                ChatRoom room = null;
+
+                // Find the chatroom it goes.
+                room = roomlist.Find(reply.Room);
+
+                if (room != null)
+                {
+                    if (OnUserLeftRoom != null) OnUserLeftRoom(this, reply.User, room);
+                }
             }
             catch (Exception)
             {

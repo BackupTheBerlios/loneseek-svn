@@ -62,6 +62,8 @@ namespace LoneSeek
         private String password = "";
         private ChatRoomList roomlist = null;
 
+
+        public event LoneSeekPrivateMessageEvent OnPrivateMessage;
         public event LoneSeekEvent OnConnected;
         public event LoneSeekEvent OnDisconnected;
         public event LoneSeekEvent OnLogin;
@@ -69,6 +71,8 @@ namespace LoneSeek
         public event LoneSeekRoomEvent OnRoomJoined;
         public event LoneSeekRoomEvent OnRoomLeft;
         public event LoneSeekChatMessageEvent OnChatMessage;
+        public event LoneSeekUserEvent OnUserJoinedRoom;
+        public event LoneSeekUserEvent OnUserLeftRoom;
 
         /// <summary>
         /// Used to queue a packet dispatching thing.

@@ -53,6 +53,12 @@ namespace LoneSeek.Packets
             // Private message to a user
             Register(typeof(MessageUserReply));
             Register(typeof(MessageUserRequest));
+            // Message acked
+            Register(typeof(MessageAckedRequest));
+            // User joined room
+            Register(typeof(UserJoinedReply));
+            // User left room
+            Register(typeof(UserLeftReply));
 
             initialized = true;
         }

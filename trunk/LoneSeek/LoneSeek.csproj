@@ -54,6 +54,9 @@
     <Compile Include="Packets\LeaveRoomRequest.cs" />
     <Compile Include="Packets\LoginRequest.cs" />
     <Compile Include="Packets\LoginReply.cs" />
+    <Compile Include="Packets\MessageAckedRequest.cs" />
+    <Compile Include="Packets\MessageUserReply.cs" />
+    <Compile Include="Packets\MessageUserRequest.cs" />
     <Compile Include="Packets\NotImplemented.cs" />
     <Compile Include="Packets\Packet.cs" />
     <Compile Include="Packets\PacketFactory.cs" />
@@ -65,6 +68,8 @@
     <Compile Include="Packets\SayChatroomRequest.cs" />
     <Compile Include="Packets\SetWaitPortRequest.cs" />
     <Compile Include="Packets\SetSharedCountRequest.cs" />
+    <Compile Include="Packets\UserJoinedReply.cs" />
+    <Compile Include="Packets\UserLeftReply.cs" />
     <Compile Include="Peer.cs" />
     <Compile Include="PeerList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
